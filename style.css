@@ -1,0 +1,110 @@
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+    background: #f4f6f8;
+    color: #222;
+}
+
+header {
+    background: #1f2937;
+    color: white;
+    padding: 25px 30px;
+}
+
+header h1 {
+    margin: 0;
+}
+
+header p {
+    margin: 8px 0 0;
+}
+
+nav {
+    background: white;
+    padding: 15px 30px;
+    border-bottom: 1px solid #ddd;
+}
+
+button {
+    padding: 10px 16px;
+    margin: 5px 5px 5px 0;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+nav button {
+    font-size: 15px;
+}
+
+main {
+    max-width: 1100px;
+    margin: 30px auto;
+    padding: 0 20px;
+}
+
+.hidden {
+    display: none;
+}
+
+.dashboard {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+}
+
+.card,
+.campaign-card,
+form,
+.details-box {
+    background: white;
+    padding: 22px;
+    border-radius: 8px;
+    margin-bottom: 15px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+
+.card p {
+    font-size: 32px;
+    font-weight: bold;
+}
+
+label {
+    display: block;
+    font-weight: bold;
+    margin-top: 15px;
+    margin-bottom: 6px;
+}
+
+input,
+textarea,
+select {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+}
+
+textarea {
+    min-height: 80px;
+}
+
+#statusFilter {
+    max-width: 250px;
+}
+
+#message {
+    font-weight: bold;
+}
+
+@media (max-width:700px) {
+
+.dashboard {
+    grid-template-columns:1fr;
+}
+
+}
