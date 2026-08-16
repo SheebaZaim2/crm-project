@@ -115,3 +115,24 @@ The frontend will send JSON requests to the backend. The backend will validate t
 - Phase 1 integration
 - Lead scoring
 - Conversion logic
+
+  ## Implementation status - 15 August 2026
+
+Implemented and locally checked:
+
+- GET /api/health
+- GET /api/campaigns
+- GET /api/campaigns/:id
+- POST /api/campaigns with validation
+- JSON response for unknown routes
+
+Pending:
+
+- PUT /api/campaigns/:id
+- DELETE /api/campaigns/:id
+- Database connection under DCRM2-13
+- Frontend API connection
+
+
+
+
