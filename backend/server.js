@@ -23,6 +23,51 @@ const campaigns = [
   }
 ];
 
+function validateCampaign(campaign) {
+  const requiredFields = [
+    "campaignName",
+    "client",
+    "brand",
+    "objective",
+    "targetAudience",
+    "startDate",
+    "endDate",
+    "budget",
+    "channel",
+    "status"
+  ];
+
+  for (const field of requiredFields) {
+    if (
+      campaign[field] === undefined ||
+      campaign[field] === null ||
+      campaign[field] === ""
+    ) {
+      return `${field} is required`;
+    }
+  }
+
+  if (new Date(campaign.endDate) < new Date(campaign.startDate)) {
+    return "End date cannot be before start date";
+  }
+
+  if (Number(campaign.budget) < 0) {
+    return "Budget must be zero or greater";
+  }
+
+  const allowedChannels = ["Facebook", "Instagram"];
+  if (!allowedChannels.includes(campaign.channel)) {
+    return "Channel must be Facebook or Instagram";
+  }
+
+  const allowedStatuses = ["Draft", "Active", "Paused", "Completed"];
+  if (!allowedStatuses.includes(campaign.status)) {
+    return "Status must be Draft, Active, Paused or Completed";
+  }
+
+  return null;
+}
+
 app.get("/api/health", (request, response) => {
   response.status(200).json({
     success: true,
@@ -34,6 +79,63 @@ app.get("/api/campaigns", (request, response) => {
   response.status(200).json({
     success: true,
     data: campaigns
+  });
+});
+
+app.get("/api/campaigns/:id", (request, response) => {
+  const campaign = campaigns.find(
+    (item) => item.id === request.params.id
+  );
+
+  if (!campaign) {
+    return response.status(404).json({
+      success: false,
+      message: "Campaign not found"
+    });
+  }
+
+  response.status(200).json({
+    success: true,
+    data: campaign
+  });
+});
+
+app.post("/api/campaigns", (request, response) => {
+  const validationError = validateCampaign(request.body);
+
+  if (validationError) {
+    return response.status(400).json({
+      success: false,
+      message: validationError
+    });
+  }
+
+  const newCampaign = {
+    id: `CAM-${String(campaigns.length + 1).padStart(3, "0")}`,
+    campaignName: request.body.campaignName,
+    client: request.body.client,
+    brand: request.body.brand,
+    objective: request.body.objective,
+    targetAudience: request.body.targetAudience,
+    startDate: request.body.startDate,
+    endDate: request.body.endDate,
+    budget: Number(request.body.budget),
+    channel: request.body.channel,
+    status: request.body.status
+  };
+
+  campaigns.push(newCampaign);
+
+  response.status(201).json({
+    success: true,
+    data: newCampaign
+  });
+});
+
+app.use((request, response) => {
+  response.status(404).json({
+    success: false,
+    message: "Route not found"
   });
 });
 
