@@ -20,6 +20,23 @@ const sampleCampaigns = [
   }
 ];
 
+const sampleContentItems = [
+  {
+    id: "CONTENT-001",
+    campaignId: "CAM-001",
+    title: "Spring Launch Post",
+    body: "Introducing our fictional spring collection. Fictional content for demonstration.",
+    channel: "Facebook",
+    scheduledDate: "2026-08-22",
+    status: "Draft",
+    createdBy: "staff@divinenet.test",
+    submittedAt: null,
+    decidedAt: null
+  }
+];
+
+const sampleApprovals = [];
+
 const COLUMNS =
   "id, campaignName, client, brand, objective, targetAudience, startDate, endDate, budget, channel, status";
 
@@ -46,6 +63,28 @@ function initDatabase() {
         channel         TEXT NOT NULL,
         status          TEXT NOT NULL
       );
+
+      CREATE TABLE IF NOT EXISTS content_items (
+        id            TEXT PRIMARY KEY,
+        campaignId    TEXT NOT NULL,
+        title         TEXT NOT NULL,
+        body          TEXT NOT NULL,
+        channel       TEXT NOT NULL,
+        scheduledDate TEXT NOT NULL,
+        status        TEXT NOT NULL,
+        createdBy     TEXT NOT NULL,
+        submittedAt   TEXT,
+        decidedAt     TEXT
+      );
+
+      CREATE TABLE IF NOT EXISTS approvals (
+        id          TEXT PRIMARY KEY,
+        contentId   TEXT NOT NULL,
+        decision    TEXT NOT NULL,
+        comment     TEXT,
+        decidedBy   TEXT NOT NULL,
+        decidedAt   TEXT NOT NULL
+      );
     `);
 
     const count = db.prepare("SELECT COUNT(*) AS n FROM campaigns").get().n;
@@ -57,6 +96,21 @@ function initDatabase() {
 
       for (const campaign of sampleCampaigns) {
         insert.run(campaign);
+      }
+    }
+
+    const contentCount = db
+      .prepare("SELECT COUNT(*) AS n FROM content_items")
+      .get().n;
+
+    if (contentCount === 0) {
+      const insert = db.prepare(
+        `INSERT INTO content_items (id, campaignId, title, body, channel, scheduledDate, status, createdBy, submittedAt, decidedAt)
+         VALUES (@id, @campaignId, @title, @body, @channel, @scheduledDate, @status, @createdBy, @submittedAt, @decidedAt)`
+      );
+
+      for (const item of sampleContentItems) {
+        insert.run(item);
       }
     }
 
@@ -75,5 +129,7 @@ module.exports = {
   initDatabase,
   getDb,
   sampleCampaigns,
+  sampleContentItems,
+  sampleApprovals,
   COLUMNS
 };
