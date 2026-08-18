@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Divinenet CRM - Draft Lead UI</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header>
+    <h1>Divinenet AI Marketing CRM</h1>
+    <p>Phase 2 - Draft Lead Management UI</p>
+  </header>
+
+  <nav>
+    <a href="index.html"><button type="button">Campaign Prototype</button></a>
+  </nav>
+
+  <main>
+    <section class="details-box">
+      <h2>Draft Lead Capture</h2>
+      <p><strong>Prototype notice:</strong> Fictional data only. Lead fields and workflow remain pending client confirmation.</p>
+
+      <form id="leadForm">
+        <label for="campaignId">Related Campaign *</label>
+        <select id="campaignId" required>
+          <option value="">Select campaign</option>
+          <option value="CAM-001">Spring Awareness Demo</option>
+        </select>
+
+        <label for="firstName">First Name *</label>
+        <input id="firstName" type="text" value="Alex">
+
+        <label for="lastName">Last Name *</label>
+        <input id="lastName" type="text" value="Demo">
+
+        <label for="email">Email *</label>
+        <input id="email" type="email" value="alex.demo@example.com">
+
+        <label for="phone">Phone</label>
+        <input id="phone" type="tel" value="0400 000 000">
+
+        <label for="sourcePlatform">Source Platform *</label>
+        <select id="sourcePlatform" required>
+          <option>Facebook</option>
+          <option>Instagram</option>
+        </select>
+
+        <label for="consentStatus">Consent Status *</label>
+        <select id="consentStatus" required>
+          <option>Recorded</option>
+          <option>Unknown</option>
+        </select>
+
+        <label for="leadStatus">Lead Status *</label>
+        <select id="leadStatus" required>
+          <option>New</option>
+          <option>Contacted</option>
+          <option>Qualified</option>
+          <option>Converted</option>
+          <option>Not Proceeding</option>
+        </select>
+
+        <p id="leadMessage"></p>
+        <button type="submit">Save Draft Lead</button>
+        <button type="reset">Clear</button>
+      </form>
+    </section>
+
+    <section>
+      <h2>Draft Lead List</h2>
+      <div class="campaign-card">
+        <h3>LEAD-001 - Alex Demo</h3>
+        <p><strong>Campaign:</strong> Spring Awareness Demo</p>
+        <p><strong>Source:</strong> Facebook</p>
+        <p><strong>Consent:</strong> Recorded</p>
+        <p><strong>Status:</strong> New</p>
+        <button type="button">View</button>
+        <button type="button">Edit</button>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    document.getElementById("leadForm").addEventListener("submit", function (event) {
+      event.preventDefault();
+      document.getElementById("leadMessage").textContent =
+        "Draft UI only - saving and backend connection will be added after review.";
+    });
+  </script>
+</body>
+</html>
