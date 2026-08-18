@@ -116,22 +116,35 @@ The frontend will send JSON requests to the backend. The backend will validate t
 - Lead scoring
 - Conversion logic
 
-  ## Implementation status - 15 August 2026
+  ## Implementation status - 18 August 2026
 
-Implemented and locally checked:
+Implemented and tested (jest + supertest, 16 tests passing):
 
 - GET /api/health
 - GET /api/campaigns
 - GET /api/campaigns/:id
 - POST /api/campaigns with validation
+- PUT /api/campaigns/:id with validation
+- DELETE /api/campaigns/:id
 - JSON response for unknown routes
+- Extracted validation.js and campaigns-store.js (service layer)
+- App exported for testing; server only listens when run directly
 
 Pending:
 
-- PUT /api/campaigns/:id
-- DELETE /api/campaigns/:id
 - Database connection under DCRM2-13
 - Frontend API connection
+- Authentication / RBAC
+
+## Implementation status - 18 August 2026 (DCRM2-13 database)
+
+PostgreSQL on this Windows PC crashes (0xC0000142, limited RAM/2nd-gen CPU), so:
+
+- Local development now uses **SQLite** (`better-sqlite3`) at `backend/data/crm.db` (path via `DB_PATH` env).
+- Schema matches the PostgreSQL blueprint (`02_DATABASE_SCHEMA.md`): campaigns table seeded with fictional data.
+- Store keeps the same API; falls back to in-memory if the DB cannot be opened.
+- Persistence verified across full server restarts.
+- **Deployment database stays PostgreSQL** via Docker on the Ubuntu machine; migrate by running the SQL schema there.
 
 
 

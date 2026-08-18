@@ -1,18 +1,24 @@
 {
   "name": "backend",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "description": "Divinenet CRM Phase 2 - Campaign Management API",
+  "main": "server.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "node server.js"
+    "test": "jest --runInBand",
+    "start": "node server.js",
+    "dev": "node server.js"
   },
   "keywords": [],
-  "author": "",
+  "author": "Group B",
   "license": "ISC",
   "type": "commonjs",
   "dependencies": {
+    "better-sqlite3": "^13.0.3",
     "cors": "^2.8.6",
     "express": "^5.2.1"
+  },
+  "devDependencies": {
+    "jest": "^29.7.0",
+    "supertest": "^7.1.3"
   }
 }
