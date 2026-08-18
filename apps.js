@@ -29,27 +29,59 @@ const sampleCampaigns = [
     }
 ];
 
-let savedData = localStorage.getItem(STORAGE_KEY);
-let campaigns;
-
-if (savedData) {
-    try {
-        campaigns = JSON.parse(savedData);
-    } catch {
-        campaigns = [...sampleCampaigns];
-    }
-} else {
-    campaigns = [...sampleCampaigns];
-}
-
-if (!Array.isArray(campaigns) || campaigns.length === 0) {
-    campaigns = [...sampleCampaigns];
-}
-
-saveToStorage();
+let campaigns = [];
+let apiMode = false;
 
 function saveToStorage() {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(campaigns));
+}
+
+function loadFromStorage() {
+    const saved = localStorage.getItem(STORAGE_KEY);
+
+    try {
+        const parsed = JSON.parse(saved);
+
+        if (Array.isArray(parsed) && parsed.length > 0) {
+            return parsed;
+        }
+    } catch (error) {
+        // fall through to sample data
+    }
+
+    return [...sampleCampaigns];
+}
+
+function setApiStatus(text) {
+    const element = document.getElementById("apiStatus");
+
+    if (element) {
+        element.textContent = text;
+    }
+}
+
+async function refreshCampaigns() {
+    try {
+        const result = await apiGet("/api/campaigns");
+
+        if (result.success) {
+            campaigns = result.data;
+            apiMode = true;
+            setApiStatus("Connected to API");
+            return;
+        }
+    } catch (error) {
+        // backend unreachable - fall back to LocalStorage
+    }
+
+    apiMode = false;
+    campaigns = loadFromStorage();
+    setApiStatus("API offline - using LocalStorage");
+}
+
+async function initData() {
+    await refreshCampaigns();
+    updateDashboard();
 }
 
 function hideAll() {
@@ -118,80 +150,94 @@ function renderCampaigns() {
             <p><strong>Channel:</strong> ${campaign.channel}</p>
             <p><strong>Status:</strong> ${campaign.status}</p>
 
-            <button onclick="viewCampaign(${campaign.id})">View</button>
-            <button onclick="editCampaign(${campaign.id})">Edit</button>
-            <button onclick="deleteCampaign(${campaign.id})">Delete</button>
+            <button onclick="viewCampaign('${campaign.id}')">View</button>
+            <button onclick="editCampaign('${campaign.id}')">Edit</button>
+            <button onclick="deleteCampaign('${campaign.id}')">Delete</button>
         `;
 
         list.appendChild(card);
     });
 }
 
-function saveCampaign(event) {
+function readFormData() {
+    return {
+        campaignName: document.getElementById("campaignName").value.trim(),
+        client: document.getElementById("client").value.trim(),
+        brand: document.getElementById("brand").value.trim(),
+        objective: document.getElementById("objective").value.trim(),
+        targetAudience: document.getElementById("targetAudience").value.trim(),
+        startDate: document.getElementById("startDate").value,
+        endDate: document.getElementById("endDate").value,
+        budget: document.getElementById("budget").value,
+        channel: document.getElementById("channel").value,
+        status: document.getElementById("status").value
+    };
+}
+
+async function saveCampaign(event) {
     event.preventDefault();
 
-    const campaignName = document
-        .getElementById("campaignName")
-        .value.trim();
-
-    const client = document
-        .getElementById("client")
-        .value.trim();
-
-    const brand = document
-        .getElementById("brand")
-        .value.trim();
-
-    const objective = document
-        .getElementById("objective")
-        .value.trim();
-
-    const targetAudience = document
-        .getElementById("targetAudience")
-        .value.trim();
-
-    const startDate = document.getElementById("startDate").value;
-    const endDate = document.getElementById("endDate").value;
-    const budget = document.getElementById("budget").value;
-    const channel = document.getElementById("channel").value;
-    const status = document.getElementById("status").value;
+    const data = readFormData();
     const message = document.getElementById("message");
 
     if (
-        !campaignName ||
-        !client ||
-        !brand ||
-        !objective ||
-        !targetAudience ||
-        !startDate ||
-        !endDate ||
-        !budget ||
-        !channel
+        !data.campaignName ||
+        !data.client ||
+        !data.brand ||
+        !data.objective ||
+        !data.targetAudience ||
+        !data.startDate ||
+        !data.endDate ||
+        !data.budget ||
+        !data.channel
     ) {
         message.textContent = "Please complete all required fields.";
         return;
     }
 
-    if (endDate < startDate) {
+    if (data.endDate < data.startDate) {
         message.textContent =
             "End date cannot be before the start date.";
         return;
     }
 
+    if (Number(data.budget) < 0) {
+        message.textContent =
+            "Budget must be zero or greater.";
+        return;
+    }
+
     const existingId = document.getElementById("campaignId").value;
+
+    if (apiMode) {
+        try {
+            if (existingId) {
+                await apiPut(`/api/campaigns/${existingId}`, data);
+            } else {
+                await apiPost("/api/campaigns", data);
+            }
+
+            await refreshCampaigns();
+            updateDashboard();
+            showCampaigns();
+        } catch (error) {
+            message.textContent = "Save failed: " + error.message;
+        }
+        return;
+    }
 
     const campaign = {
         id: existingId ? Number(existingId) : Date.now(),
-        campaignName,
-        client,
-        brand,
-        objective,
-        targetAudience,
-        startDate,
-        endDate,
-        budget: Number(budget),
-        channel,
-        status
+        campaignName: data.campaignName,
+        client: data.client,
+        brand: data.brand,
+        objective: data.objective,
+        targetAudience: data.targetAudience,
+        startDate: data.startDate,
+        endDate: data.endDate,
+        budget: Number(data.budget),
+        channel: data.channel,
+        status: data.status
     };
 
     if (existingId) {
@@ -272,7 +318,7 @@ function editCampaign(id) {
     document.getElementById("formSection").classList.remove("hidden");
 }
 
-function deleteCampaign(id) {
+async function deleteCampaign(id) {
     const campaign = campaigns.find(item => item.id === id);
 
     if (!campaign) {
@@ -287,6 +333,18 @@ function deleteCampaign(id) {
         return;
     }
 
+    if (apiMode) {
+        try {
+            await apiDelete(`/api/campaigns/${id}`);
+            await refreshCampaigns();
+            updateDashboard();
+            renderCampaigns();
+        } catch (error) {
+            alert("Delete failed: " + error.message);
+        }
+        return;
+    }
+
     campaigns = campaigns.filter(item => item.id !== id);
 
     saveToStorage();
@@ -294,4 +352,4 @@ function deleteCampaign(id) {
     renderCampaigns();
 }
 
-updateDashboard();
+initData();
