@@ -1,0 +1,25 @@
+services:
+  backend:
+    build:
+      context: https://github.com/SheebaZaim2/crm-project.git#sprint2/backend-api
+      dockerfile: backend/Dockerfile
+    environment:
+      - PORT=3000
+      - AI_MOCK=1
+      - SOCIAL_MOCK=1
+      - PHASE1_MOCK=1
+    volumes:
+      - ./data:/app/data
+    ports:
+      - "3000:3000"
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+    ports:
+      - "8080:80"
+    depends_on:
+      - backend
+    restart: unless-stopped

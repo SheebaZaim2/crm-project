@@ -1,0 +1,6 @@
+node_modules
+data
+*.log
+.env
+DCRM2-17*.drawio
+DCRM2-17*.png
