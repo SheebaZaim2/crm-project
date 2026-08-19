@@ -9,7 +9,8 @@ const contentStore = require("./content-store");
 const users = require("./users");
 const { signToken, authenticateToken, requireRole } = require("./auth");
 const ai = require("./services/ai_provider");
-const { buildDraftPrompt } = require("./services/prompt_builder");
+const { buildDraftPrompt, buildReportPrompt } = require("./services/prompt_builder");
+const analytics = require("./services/analytics");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -30,7 +31,8 @@ app.get("/", (request, response) => {
       health: "/api/health",
       campaigns: ["/api/campaigns", "/api/campaigns/:id", "POST /api/campaigns", "PUT /api/campaigns/:id", "DELETE /api/campaigns/:id"],
       content: ["/api/content", "/api/content/:id", "POST /api/content", "PUT /api/content/:id", "DELETE /api/content/:id", "POST /api/content/:id/submit", "POST /api/content/:id/decide"],
-      ai: "POST /api/ai/draft"
+      ai: "POST /api/ai/draft",
+      analytics: ["GET /api/analytics/kpis", "POST /api/analytics/report", "GET /api/analytics/metrics"]
     }
   });
 });
@@ -402,6 +404,85 @@ app.post(
       response.status(500).json({
         success: false,
         message: "AI draft generation failed"
+      });
+    }
+  }
+);
+
+app.get("/api/analytics/metrics", authenticateToken, (request, response) => {
+  response.status(200).json({
+    success: true,
+    data: analytics.getMetricsList()
+  });
+});
+
+app.get("/api/analytics/kpis", authenticateToken, (request, response) => {
+  const { campaignId } = request.query || {};
+
+  if (campaignId) {
+    const campaign = store.findById(campaignId);
+
+    if (!campaign) {
+      return response.status(404).json({
+        success: false,
+        message: "Campaign not found"
+      });
+    }
+  }
+
+  response.status(200).json({
+    success: true,
+    data: analytics.getAnalytics(campaignId || null),
+    note: "Analytics are computed from approved fictional KPI records."
+  });
+});
+
+app.post(
+  "/api/analytics/report",
+  authenticateToken,
+  async (request, response) => {
+    const { campaignId, extraInstructions } = request.body || {};
+
+    if (campaignId) {
+      const campaign = store.findById(campaignId);
+
+      if (!campaign) {
+        return response.status(404).json({
+          success: false,
+          message: "Campaign not found"
+        });
+      }
+    }
+
+    const data = analytics.getAnalytics(campaignId || null);
+
+    if (!data.campaigns.some((row) => row.hasData)) {
+      return response.status(400).json({
+        success: false,
+        message: "No analytics data available for the selected campaign"
+      });
+    }
+
+    const prompt = buildReportPrompt(data, extraInstructions);
+
+    try {
+      const result = await ai.generateDraft(prompt);
+
+      response.status(200).json({
+        success: true,
+        data: {
+          narrative: result.draft,
+          provider: result.provider,
+          model: result.model,
+          campaignId: campaignId || null,
+          warning: result.warning || null
+        },
+        note: "AI report is editable and is never auto-published."
+      });
+    } catch (error) {
+      response.status(500).json({
+        success: false,
+        message: "AI report generation failed"
       });
     }
   }

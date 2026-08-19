@@ -21,6 +21,46 @@ function buildDraftPrompt(campaign, channel, extraInstructions) {
   ].join("\n");
 }
 
+function formatMetrics(metrics) {
+  return Object.entries(metrics || {})
+    .map(([key, value]) => `${key}: ${value}`)
+    .join(", ");
+}
+
+function buildReportPrompt(analytics, extraInstructions) {
+  const instructions = extraInstructions ? extraInstructions.trim() : "";
+
+  const campaignLines = (analytics.campaigns || []).map(
+    (row) =>
+      `- ${row.campaignName} (${row.channel}, ${row.status}): ${formatMetrics(row.metrics)}`
+  );
+
+  const platformLines = (analytics.platforms || []).map(
+    (row) => `- ${row.channel} (${row.campaignCount} campaign/s): ${formatMetrics(row.metrics)}`
+  );
+
+  return [
+    "You are the Divinenet AI marketing reporting assistant. Write a short client-ready performance summary from the following fictional analytics data.",
+    "",
+    `Period total campaigns: ${analytics.totalCampaigns}`,
+    `Overall metrics: ${formatMetrics(analytics.totals)}`,
+    "",
+    "By platform:",
+    ...platformLines,
+    "",
+    "By campaign:",
+    ...campaignLines,
+    "",
+    "Guidelines:",
+    "- Write 3-5 short paragraphs in plain professional language.",
+    "- Highlight the strongest metric and one area that could improve.",
+    "- Keep all content fictional for demonstration purposes.",
+    "- This is an editable report draft; it is never published automatically.",
+    instructions ? `Additional instructions: ${instructions}` : "No additional instructions."
+  ].join("\n");
+}
+
 module.exports = {
-  buildDraftPrompt
+  buildDraftPrompt,
+  buildReportPrompt
 };

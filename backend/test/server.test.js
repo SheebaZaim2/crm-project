@@ -2,6 +2,7 @@ const request = require("supertest");
 const app = require("../server");
 const store = require("../campaigns-store");
 const contentStore = require("../content-store");
+const analytics = require("../services/analytics");
 
 const validCampaign = {
   campaignName: "Summer Launch Demo",
@@ -19,6 +20,7 @@ const validCampaign = {
 beforeEach(() => {
   store.reset();
   contentStore.reset();
+  analytics.reset();
 });
 
 let adminToken;
@@ -511,5 +513,159 @@ it("forbids ClientApprover from generating drafts", async () => {
       .send({ campaignId: "CAM-001", channel: "Facebook" });
 
     expect(response.status).toBe(403);
+  });
+});
+
+describe("analytics KPI dashboard (FR-08)", () => {
+  it("returns 401 without a token", async () => {
+    const response = await request(app).get("/api/analytics/kpis");
+
+    expect(response.status).toBe(401);
+  });
+
+  it("returns aggregated KPI data for the sample campaign", async () => {
+    const response = await request(app)
+      .get("/api/analytics/kpis")
+      .set("Authorization", `Bearer ${adminToken}`);
+
+    expect(response.status).toBe(200);
+    expect(response.body.success).toBe(true);
+    expect(response.body.data.totalCampaigns).toBe(1);
+    expect(response.body.data.campaigns).toHaveLength(1);
+    expect(response.body.data.campaigns[0].id).toBe("CAM-001");
+    expect(response.body.data.campaigns[0].metrics.Reach).toBe(12500);
+    expect(response.body.data.campaigns[0].metrics.Impressions).toBe(18400);
+    expect(response.body.data.totals.Reach).toBe(12500);
+  });
+
+  it("filters KPI data by campaign", async () => {
+    const created = await request(app)
+      .post("/api/campaigns")
+      .set("Authorization", `Bearer ${adminToken}`)
+      .send({ ...validCampaign, campaignName: "KPI Filter Demo" });
+
+    expect(created.status).toBe(201);
+
+    const response = await request(app)
+      .get("/api/analytics/kpis?campaignId=CAM-002")
+      .set("Authorization", `Bearer ${adminToken}`);
+
+    expect(response.status).toBe(200);
+    expect(response.body.data.totalCampaigns).toBe(1);
+    expect(response.body.data.campaigns[0].id).toBe("CAM-002");
+    expect(response.body.data.campaigns[0].metrics.Reach).toBe(0);
+  });
+
+  it("returns 404 for an unknown campaign", async () => {
+    const response = await request(app)
+      .get("/api/analytics/kpis?campaignId=CAM-999")
+      .set("Authorization", `Bearer ${adminToken}`);
+
+    expect(response.status).toBe(404);
+    expect(response.body.message).toBe("Campaign not found");
+  });
+
+  it("aggregates metrics by platform", async () => {
+    const response = await request(app)
+      .get("/api/analytics/kpis")
+      .set("Authorization", `Bearer ${adminToken}`);
+
+    expect(response.status).toBe(200);
+    expect(response.body.data.platforms).toHaveLength(1);
+    expect(response.body.data.platforms[0].channel).toBe("Facebook");
+    expect(response.body.data.platforms[0].campaignCount).toBe(1);
+    expect(response.body.data.platforms[0].metrics.Likes).toBe(620);
+  });
+
+  it("exposes the approved KPI metric list", async () => {
+    const response = await request(app)
+      .get("/api/analytics/metrics")
+      .set("Authorization", `Bearer ${adminToken}`);
+
+    expect(response.status).toBe(200);
+    expect(response.body.data.core).toContain("Reach");
+    expect(response.body.data.core).toContain("ROI");
+    expect(response.body.data.platforms.TikTok).toContain("Plays");
+  });
+
+  it("allows MarketingStaff to view analytics", async () => {
+    const token = await loginAs("staff@divinenet.test", "staff123");
+
+    const response = await request(app)
+      .get("/api/analytics/kpis")
+      .set("Authorization", `Bearer ${token}`);
+
+    expect(response.status).toBe(200);
+    expect(response.body.success).toBe(true);
+  });
+
+  it("allows ClientApprover to view analytics", async () => {
+    const token = await loginAs("approver@divinenet.test", "approver123");
+
+    const response = await request(app)
+      .get("/api/analytics/kpis")
+      .set("Authorization", `Bearer ${token}`);
+
+    expect(response.status).toBe(200);
+    expect(response.body.success).toBe(true);
+  });
+});
+
+describe("AI performance report (FR-09)", () => {
+  it("returns 401 without a token", async () => {
+    const response = await request(app).post("/api/analytics/report").send({});
+
+    expect(response.status).toBe(401);
+  });
+
+  it("generates an editable report narrative from analytics", async () => {
+    const response = await request(app)
+      .post("/api/analytics/report")
+      .set("Authorization", `Bearer ${adminToken}`)
+      .send({ extraInstructions: "Keep it concise" });
+
+    expect(response.status).toBe(200);
+    expect(response.body.success).toBe(true);
+    expect(response.body.data.narrative).toBeTruthy();
+    expect(response.body.data.provider).toBe("mock");
+    expect(response.body.data.campaignId).toBeNull();
+    expect(response.body.note).toContain("never auto-published");
+  });
+
+  it("generates a report for a single campaign", async () => {
+    const response = await request(app)
+      .post("/api/analytics/report")
+      .set("Authorization", `Bearer ${adminToken}`)
+      .send({ campaignId: "CAM-001" });
+
+    expect(response.status).toBe(200);
+    expect(response.body.data.campaignId).toBe("CAM-001");
+  });
+
+  it("returns 404 for an unknown campaign", async () => {
+    const response = await request(app)
+      .post("/api/analytics/report")
+      .set("Authorization", `Bearer ${adminToken}`)
+      .send({ campaignId: "CAM-999" });
+
+    expect(response.status).toBe(404);
+    expect(response.body.message).toBe("Campaign not found");
+  });
+
+  it("returns 400 when there is no KPI data for the campaign", async () => {
+    await request(app)
+      .post("/api/campaigns")
+      .set("Authorization", `Bearer ${adminToken}`)
+      .send({ ...validCampaign, campaignName: "No KPI Campaign" });
+
+    const response = await request(app)
+      .post("/api/analytics/report")
+      .set("Authorization", `Bearer ${adminToken}`)
+      .send({ campaignId: "CAM-002" });
+
+    expect(response.status).toBe(400);
+    expect(response.body.message).toBe(
+      "No analytics data available for the selected campaign"
+    );
   });
 });
