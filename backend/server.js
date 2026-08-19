@@ -13,6 +13,7 @@ const { buildDraftPrompt, buildReportPrompt } = require("./services/prompt_build
 const analytics = require("./services/analytics");
 const leadStore = require("./leads-store");
 const automation = require("./services/automation");
+const social = require("./services/social_connectors");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -36,7 +37,8 @@ app.get("/", (request, response) => {
       ai: "POST /api/ai/draft",
       analytics: ["GET /api/analytics/kpis", "POST /api/analytics/report", "GET /api/analytics/metrics"],
       leads: ["GET /api/leads", "POST /api/leads", "GET /api/leads/:id", "PUT /api/leads/:id", "DELETE /api/leads/:id"],
-      automation: ["POST /api/campaigns/:id/activate", "POST /api/content/:id/schedule", "POST /api/posts/:id/publish", "GET /api/automation/posts", "GET /api/automation/activities"]
+      automation: ["POST /api/campaigns/:id/activate", "POST /api/content/:id/schedule", "POST /api/posts/:id/publish", "GET /api/automation/posts", "GET /api/automation/activities"],
+      social: ["GET /api/social/connectors", "GET /api/social/connectors/:platform/status", "POST /api/social/publish"]
     }
   });
 });
@@ -620,6 +622,67 @@ app.get("/api/automation/activities", authenticateToken, (request, response) => 
     data: automation.listActivities()
   });
 });
+
+app.get("/api/social/connectors", authenticateToken, (request, response) => {
+  response.status(200).json({
+    success: true,
+    data: social.listConnectors()
+  });
+});
+
+app.get("/api/social/connectors/:platform/status", authenticateToken, async (request, response) => {
+  const connector = social.getConnector(request.params.platform);
+
+  if (!connector) {
+    return response.status(404).json({
+      success: false,
+      message: "No connector configured for that platform"
+    });
+  }
+
+  response.status(200).json({
+    success: true,
+    data: await connector.checkStatus()
+  });
+});
+
+app.post(
+  "/api/social/publish",
+  authenticateToken,
+  requireRole(...CREATOR_ROLES),
+  async (request, response) => {
+    const { platform, content } = request.body || {};
+
+    if (!platform || !content || !content.title || !content.body) {
+      return response.status(400).json({
+        success: false,
+        message: "platform, content.title and content.body are required"
+      });
+    }
+
+    const result = await social.publishToPlatform(platform, content);
+
+    if (result.error) {
+      return response.status(400).json({
+        success: false,
+        message: result.error
+      });
+    }
+
+    if (result instanceof Error || result.error) {
+      return response.status(502).json({
+        success: false,
+        message: result.message || result.error
+      });
+    }
+
+    response.status(200).json({
+      success: true,
+      data: result,
+      note: "All social publishing currently runs in mock/sandbox mode."
+    });
+  }
+);
 
 app.get("/api/analytics/metrics", authenticateToken, (request, response) => {
   response.status(200).json({

@@ -5,6 +5,7 @@ const contentStore = require("../content-store");
 const analytics = require("../services/analytics");
 const leadStore = require("../leads-store");
 const automation = require("../services/automation");
+const social = require("../services/social_connectors");
 
 const validCampaign = {
   campaignName: "Summer Launch Demo",
@@ -932,5 +933,81 @@ describe("automation (FR-06)", () => {
       .set("Authorization", `Bearer ${adminToken}`);
     expect(activities.status).toBe(200);
     expect(activities.body.data.some((item) => item.action === "SchedulePost")).toBe(true);
+  });
+});
+
+describe("social connector framework (FR-07)", () => {
+  it("returns 401 without a token", async () => {
+    const response = await request(app).get("/api/social/connectors");
+
+    expect(response.status).toBe(401);
+  });
+
+  it("lists connectors in priority order", async () => {
+    const response = await request(app)
+      .get("/api/social/connectors")
+      .set("Authorization", `Bearer ${adminToken}`);
+
+    expect(response.status).toBe(200);
+    expect(response.body.data).toHaveLength(4);
+    expect(response.body.data[0].platform).toBe("Facebook");
+    expect(response.body.data[1].platform).toBe("Instagram");
+    expect(response.body.data[0].mode).toBe("mock");
+    expect(response.body.data[0].priority).toBe(1);
+  });
+
+  it("returns status for a configured platform", async () => {
+    const response = await request(app)
+      .get("/api/social/connectors/Facebook/status")
+      .set("Authorization", `Bearer ${adminToken}`);
+
+    expect(response.status).toBe(200);
+    expect(response.body.data.platform).toBe("Facebook");
+    expect(response.body.data.status).toBe("ready");
+  });
+
+  it("returns 404 for an unknown platform", async () => {
+    const response = await request(app)
+      .get("/api/social/connectors/Snapchat/status")
+      .set("Authorization", `Bearer ${adminToken}`);
+
+    expect(response.status).toBe(404);
+  });
+
+  it("publishes content to a platform in mock mode", async () => {
+    const token = await loginAs("staff@divinenet.test", "staff123");
+
+    const response = await request(app)
+      .post("/api/social/publish")
+      .set("Authorization", `Bearer ${token}`)
+      .send({
+        platform: "Instagram",
+        content: { title: "Social Test", body: "Fictional post body." }
+      });
+
+    expect(response.status).toBe(200);
+    expect(response.body.success).toBe(true);
+    expect(response.body.data.platform).toBe("Instagram");
+    expect(response.body.data.success).toBe(true);
+    expect(response.body.data.postId).toBeTruthy();
+  });
+
+  it("rejects a publish without content", async () => {
+    const response = await request(app)
+      .post("/api/social/publish")
+      .set("Authorization", `Bearer ${adminToken}`)
+      .send({ platform: "Facebook" });
+
+    expect(response.status).toBe(400);
+  });
+
+  it("rejects publishing to an unknown platform", async () => {
+    const response = await request(app)
+      .post("/api/social/publish")
+      .set("Authorization", `Bearer ${adminToken}`)
+      .send({ platform: "Snapchat", content: { title: "X", body: "Y" } });
+
+    expect(response.status).toBe(400);
+    expect(response.body.message).toBe("No connector configured for Snapchat");
   });
 });
