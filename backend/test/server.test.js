@@ -6,6 +6,7 @@ const analytics = require("../services/analytics");
 const leadStore = require("../leads-store");
 const automation = require("../services/automation");
 const social = require("../services/social_connectors");
+const phase1 = require("../services/phase1_adapter");
 
 const validCampaign = {
   campaignName: "Summer Launch Demo",
@@ -1009,5 +1010,35 @@ describe("social connector framework (FR-07)", () => {
 
     expect(response.status).toBe(400);
     expect(response.body.message).toBe("No connector configured for Snapchat");
+  });
+});
+
+describe("phase 1 integration adapter (FR-01)", () => {
+  it("returns 401 without a token", async () => {
+    const response = await request(app).get("/api/phase1/customers");
+
+    expect(response.status).toBe(401);
+  });
+
+  it("returns customers from mock fallback", async () => {
+    const response = await request(app)
+      .get("/api/phase1/customers")
+      .set("Authorization", `Bearer ${adminToken}`);
+
+    expect(response.status).toBe(200);
+    expect(response.body.success).toBe(true);
+    expect(response.body.source).toBe("mock");
+    expect(response.body.data[0].clientName).toBe("Fictional Client");
+  });
+
+  it("returns users from mock fallback", async () => {
+    const response = await request(app)
+      .get("/api/phase1/users")
+      .set("Authorization", `Bearer ${adminToken}`);
+
+    expect(response.status).toBe(200);
+    expect(response.body.success).toBe(true);
+    expect(response.body.source).toBe("mock");
+    expect(response.body.data).toHaveLength(2);
   });
 });

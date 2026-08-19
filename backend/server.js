@@ -14,6 +14,7 @@ const analytics = require("./services/analytics");
 const leadStore = require("./leads-store");
 const automation = require("./services/automation");
 const social = require("./services/social_connectors");
+const phase1 = require("./services/phase1_adapter");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -38,7 +39,8 @@ app.get("/", (request, response) => {
       analytics: ["GET /api/analytics/kpis", "POST /api/analytics/report", "GET /api/analytics/metrics"],
       leads: ["GET /api/leads", "POST /api/leads", "GET /api/leads/:id", "PUT /api/leads/:id", "DELETE /api/leads/:id"],
       automation: ["POST /api/campaigns/:id/activate", "POST /api/content/:id/schedule", "POST /api/posts/:id/publish", "GET /api/automation/posts", "GET /api/automation/activities"],
-      social: ["GET /api/social/connectors", "GET /api/social/connectors/:platform/status", "POST /api/social/publish"]
+      social: ["GET /api/social/connectors", "GET /api/social/connectors/:platform/status", "POST /api/social/publish"],
+      phase1: ["GET /api/phase1/customers", "GET /api/phase1/users"]
     }
   });
 });
@@ -683,6 +685,28 @@ app.post(
     });
   }
 );
+
+app.get("/api/phase1/customers", authenticateToken, async (request, response) => {
+  const result = await phase1.listCustomers();
+
+  response.status(200).json({
+    success: true,
+    data: result.data,
+    source: result.source,
+    warning: result.warning || null
+  });
+});
+
+app.get("/api/phase1/users", authenticateToken, async (request, response) => {
+  const result = await phase1.listUsers();
+
+  response.status(200).json({
+    success: true,
+    data: result.data,
+    source: result.source,
+    warning: result.warning || null
+  });
+});
 
 app.get("/api/analytics/metrics", authenticateToken, (request, response) => {
   response.status(200).json({
