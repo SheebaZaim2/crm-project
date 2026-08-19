@@ -40,6 +40,7 @@
     <button onclick="showDashboard()">Dashboard</button>
     <button onclick="showCampaigns()">Campaigns</button>
     <button onclick="showCreateForm()">Create Campaign</button>
+    <button onclick="showAnalytics()">Analytics</button>
 </nav>
 
 <section id="dashboardSection" class="hidden">
@@ -153,9 +154,42 @@
 
 </section>
 
+<section id="analyticsSection" class="hidden">
+
+    <h2>Analytics</h2>
+
+    <p id="analyticsStatus" class="api-status">Loading analytics...</p>
+
+    <div class="analytics-toolbar">
+        <label for="analyticsCampaign">Campaign</label>
+        <select id="analyticsCampaign" onchange="loadAnalytics()">
+            <option value="">All Campaigns</option>
+        </select>
+        <button onclick="loadAnalytics()">Refresh</button>
+    </div>
+
+    <div id="kpiCards" class="dashboard"></div>
+
+    <h3>Campaign Breakdown</h3>
+    <div id="campaignKpiTable"></div>
+
+    <h3>Platform Breakdown</h3>
+    <div id="platformKpiTable"></div>
+
+    <h3>AI Performance Report</h3>
+    <div class="analytics-report">
+        <button onclick="generateReport()">Generate AI Report</button>
+        <p id="reportMessage"></p>
+        <textarea id="reportNarrative" placeholder="Generate a report to see the AI narrative here. You can edit it before sharing."></textarea>
+        <p id="reportNote" class="api-status hidden"></p>
+    </div>
+
+</section>
+
 </main>
 
 <script src="js/api.js"></script>
+<script src="js/kpi.js"></script>
 <script src="apps.js"></script>
 
 </body>

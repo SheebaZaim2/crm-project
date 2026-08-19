@@ -133,6 +133,73 @@ textarea {
     color: #b91c1c;
 }
 
+.analytics-toolbar {
+    display: flex;
+    align-items: flex-end;
+    gap: 15px;
+    margin-bottom: 15px;
+}
+
+.analytics-toolbar label {
+    margin: 0;
+}
+
+.analytics-toolbar select {
+    max-width: 300px;
+}
+
+#analyticsCampaign {
+    width: auto;
+}
+
+.table-wrap {
+    overflow-x: auto;
+    background: white;
+    border-radius: 8px;
+    margin-bottom: 15px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+
+.kpi-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+}
+
+.kpi-table th,
+.kpi-table td {
+    padding: 10px 12px;
+    text-align: left;
+    border-bottom: 1px solid #e2e8f0;
+    white-space: nowrap;
+}
+
+.kpi-table th {
+    background: #1f2937;
+    color: white;
+}
+
+.kpi-table tr:last-child td {
+    border-bottom: none;
+}
+
+.analytics-report {
+    background: white;
+    padding: 22px;
+    border-radius: 8px;
+    margin-bottom: 15px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+
+#reportNarrative {
+    min-height: 160px;
+    margin-top: 10px;
+}
+
+#reportNote {
+    margin-top: 10px;
+}
+
 @media (max-width:700px) {
 
 .dashboard {
