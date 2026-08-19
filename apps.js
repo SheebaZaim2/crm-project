@@ -71,7 +71,10 @@ async function refreshCampaigns() {
             return;
         }
     } catch (error) {
-        // backend unreachable - fall back to LocalStorage
+        if (error.message === "Authentication required" || error.message.includes("token")) {
+            showLogin();
+            return;
+        }
     }
 
     apiMode = false;
@@ -80,8 +83,71 @@ async function refreshCampaigns() {
 }
 
 async function initData() {
+    const user = getSessionUser();
+
+    if (!getToken()) {
+        showLogin();
+        return;
+    }
+
     await refreshCampaigns();
     updateDashboard();
+    showApp(user);
+}
+
+function showLogin() {
+    setApiStatus("Please sign in to continue");
+    document.getElementById("loginSection").classList.remove("hidden");
+    document.getElementById("appNav").classList.add("hidden");
+    document.getElementById("dashboardSection").classList.add("hidden");
+    document.getElementById("campaignSection").classList.add("hidden");
+    document.getElementById("formSection").classList.add("hidden");
+    document.getElementById("detailsSection").classList.add("hidden");
+    document.getElementById("userBar").classList.add("hidden");
+}
+
+function showApp(user) {
+    document.getElementById("loginSection").classList.add("hidden");
+    document.getElementById("appNav").classList.remove("hidden");
+    document.getElementById("userBar").classList.remove("hidden");
+    document.getElementById("userInfo").textContent =
+        user ? `${user.fullName} (${user.role})` : "Signed in";
+    showDashboard();
+}
+
+function canWrite() {
+    const user = getSessionUser();
+    return user && (user.role === "Admin" || user.role === "CampaignManager");
+}
+
+async function handleLogin(event) {
+    event.preventDefault();
+
+    const message = document.getElementById("loginMessage");
+    const email = document.getElementById("loginEmail").value.trim();
+    const password = document.getElementById("loginPassword").value;
+
+    message.textContent = "Signing in...";
+
+    try {
+        const result = await apiLogin(email, password);
+        setSession(result.token, result.user);
+        message.textContent = "";
+
+        await refreshCampaigns();
+        updateDashboard();
+        showApp(result.user);
+    } catch (error) {
+        message.textContent = "Login failed: " + error.message;
+    }
+}
+
+function handleLogout() {
+    clearSession();
+    document.getElementById("loginEmail").value = "";
+    document.getElementById("loginPassword").value = "";
+    document.getElementById("loginMessage").textContent = "";
+    showLogin();
 }
 
 function hideAll() {
@@ -116,7 +182,7 @@ function showCampaigns() {
 function showCreateForm() {
     hideAll();
 
-    document.querySelector("form").reset();
+    document.getElementById("campaignForm").reset();
     document.getElementById("campaignId").value = "";
     document.getElementById("formTitle").textContent = "Create Campaign";
     document.getElementById("message").textContent = "";
@@ -144,15 +210,20 @@ function renderCampaigns() {
         const card = document.createElement("div");
         card.className = "campaign-card";
 
+        const actionButtons = canWrite()
+            ? `
+                <button onclick="viewCampaign('${campaign.id}')">View</button>
+                <button onclick="editCampaign('${campaign.id}')">Edit</button>
+                <button onclick="deleteCampaign('${campaign.id}')">Delete</button>
+            `
+            : `<button onclick="viewCampaign('${campaign.id}')">View</button>`;
+
         card.innerHTML = `
             <h3>${campaign.campaignName}</h3>
             <p><strong>Client:</strong> ${campaign.client}</p>
             <p><strong>Channel:</strong> ${campaign.channel}</p>
             <p><strong>Status:</strong> ${campaign.status}</p>
-
-            <button onclick="viewCampaign('${campaign.id}')">View</button>
-            <button onclick="editCampaign('${campaign.id}')">Edit</button>
-            <button onclick="deleteCampaign('${campaign.id}')">Delete</button>
+            ${actionButtons}
         `;
 
         list.appendChild(card);

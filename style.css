@@ -112,6 +112,27 @@ textarea {
     padding: 8px 12px;
 }
 
+#userBar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    justify-content: flex-end;
+    margin-top: 10px;
+}
+
+#userInfo {
+    font-weight: bold;
+}
+
+#loginSection {
+    max-width: 420px;
+}
+
+#loginMessage {
+    font-weight: bold;
+    color: #b91c1c;
+}
+
 @media (max-width:700px) {
 
 .dashboard {

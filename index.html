@@ -14,19 +14,35 @@
 <header>
     <h1>Divinenet AI Marketing CRM</h1>
     <p>Phase 2 - Sprint 1 Campaign Management Prototype</p>
+    <div id="userBar" class="hidden">
+        <span id="userInfo"></span>
+        <button onclick="handleLogout()">Logout</button>
+    </div>
 </header>
-
-<nav>
-    <button onclick="showDashboard()">Dashboard</button>
-    <button onclick="showCampaigns()">Campaigns</button>
-    <button onclick="showCreateForm()">Create Campaign</button>
-</nav>
 
 <main>
 
 <p id="apiStatus" class="api-status">Connecting to API...</p>
 
-<section id="dashboardSection">
+<section id="loginSection">
+    <h2>Sign In</h2>
+    <form onsubmit="handleLogin(event)">
+        <label>Email</label>
+        <input id="loginEmail" type="email" placeholder="admin@divinenet.test" required>
+        <label>Password</label>
+        <input id="loginPassword" type="password" placeholder="admin123" required>
+        <p id="loginMessage"></p>
+        <button type="submit">Sign In</button>
+    </form>
+</section>
+
+<nav id="appNav" class="hidden">
+    <button onclick="showDashboard()">Dashboard</button>
+    <button onclick="showCampaigns()">Campaigns</button>
+    <button onclick="showCreateForm()">Create Campaign</button>
+</nav>
+
+<section id="dashboardSection" class="hidden">
     <h2>Dashboard</h2>
 
     <div class="dashboard">
@@ -73,7 +89,7 @@
 
     <h2 id="formTitle">Create Campaign</h2>
 
-    <form onsubmit="saveCampaign(event)">
+    <form id="campaignForm" onsubmit="saveCampaign(event)">
 
         <input type="hidden" id="campaignId">
 
