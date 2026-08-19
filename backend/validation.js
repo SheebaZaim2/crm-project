@@ -11,7 +11,7 @@ const requiredFields = [
   "status"
 ];
 
-const allowedChannels = ["Facebook", "Instagram"];
+const allowedChannels = ["Facebook", "Instagram", "YouTube", "TikTok"];
 const allowedStatuses = ["Draft", "Active", "Paused", "Completed"];
 
 function validateCampaign(campaign) {
@@ -38,7 +38,7 @@ function validateCampaign(campaign) {
   }
 
   if (!allowedChannels.includes(campaign.channel)) {
-    return "Channel must be Facebook or Instagram";
+    return "Channel must be Facebook, Instagram, YouTube or TikTok";
   }
 
   if (!allowedStatuses.includes(campaign.status)) {
