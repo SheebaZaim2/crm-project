@@ -42,6 +42,7 @@
     <button onclick="showCreateForm()">Create Campaign</button>
     <button onclick="showLeads()">Leads</button>
     <button onclick="showAutomation()">Automation</button>
+    <button onclick="showSocial()">Social</button>
     <button onclick="showAnalytics()">Analytics</button>
 </nav>
 
@@ -251,6 +252,16 @@
 
 </section>
 
+<section id="socialSection" class="hidden">
+
+    <h2>Social Connectors</h2>
+
+    <p id="socialStatus" class="api-status">Loading...</p>
+
+    <div id="connectorList"></div>
+
+</section>
+
 <section id="analyticsSection" class="hidden">
 
     <h2>Analytics</h2>
@@ -289,6 +300,7 @@
 <script src="js/leads.js"></script>
 <script src="js/kpi.js"></script>
 <script src="js/automation.js"></script>
+<script src="js/social.js"></script>
 <script src="apps.js"></script>
 
 </body>
