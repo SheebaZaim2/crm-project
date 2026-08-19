@@ -103,6 +103,8 @@ function showLogin() {
     document.getElementById("campaignSection").classList.add("hidden");
     document.getElementById("formSection").classList.add("hidden");
     document.getElementById("detailsSection").classList.add("hidden");
+    document.getElementById("contentSection").classList.add("hidden");
+    document.getElementById("aiDraftSection").classList.add("hidden");
     document.getElementById("analyticsSection").classList.add("hidden");
     document.getElementById("leadsSection").classList.add("hidden");
     document.getElementById("automationSection").classList.add("hidden");
@@ -160,6 +162,8 @@ function hideAll() {
     document.getElementById("campaignSection").classList.add("hidden");
     document.getElementById("formSection").classList.add("hidden");
     document.getElementById("detailsSection").classList.add("hidden");
+    document.getElementById("contentSection").classList.add("hidden");
+    document.getElementById("aiDraftSection").classList.add("hidden");
     document.getElementById("analyticsSection").classList.add("hidden");
     document.getElementById("leadsSection").classList.add("hidden");
     document.getElementById("automationSection").classList.add("hidden");

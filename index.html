@@ -40,6 +40,8 @@
     <button onclick="showDashboard()">Dashboard</button>
     <button onclick="showCampaigns()">Campaigns</button>
     <button onclick="showCreateForm()">Create Campaign</button>
+    <button onclick="showContent()">Content</button>
+    <button onclick="showAIDraft()">AI Draft</button>
     <button onclick="showLeads()">Leads</button>
     <button onclick="showAutomation()">Automation</button>
     <button onclick="showSocial()">Social</button>
@@ -155,6 +157,78 @@
     <div id="campaignDetails" class="details-box"></div>
 
     <button onclick="showCampaigns()">Back to Campaigns</button>
+
+</section>
+
+<section id="contentSection" class="hidden">
+
+    <h2>Content Calendar</h2>
+
+    <p id="contentStatus" class="api-status">Loading content...</p>
+
+    <div class="analytics-toolbar">
+        <button onclick="showContentForm()">New Content</button>
+        <button onclick="loadContent()">Refresh</button>
+    </div>
+
+    <div id="contentFormWrap" class="hidden">
+        <h3 id="contentFormTitle">New Content</h3>
+        <form id="contentForm" onsubmit="saveContent(event)">
+            <input type="hidden" id="contentId">
+            <label for="contentCampaignId">Related Campaign *</label>
+            <select id="contentCampaignId" required></select>
+            <label for="contentTitle">Title *</label>
+            <input id="contentTitle" type="text" required>
+            <label for="contentBody">Body *</label>
+            <textarea id="contentBody" required></textarea>
+            <label for="contentChannel">Channel *</label>
+            <select id="contentChannel" required>
+                <option value="">Select Channel</option>
+                <option>Facebook</option>
+                <option>Instagram</option>
+                <option>YouTube</option>
+                <option>TikTok</option>
+            </select>
+            <label for="contentDate">Scheduled Date *</label>
+            <input id="contentDate" type="date" required>
+            <p id="contentMessage"></p>
+            <button type="submit">Save Content</button>
+            <button type="button" onclick="loadContent()">Cancel</button>
+        </form>
+    </div>
+
+    <div id="contentList"></div>
+
+</section>
+
+<section id="aiDraftSection" class="hidden">
+
+    <h2>AI Content Draft</h2>
+
+    <p id="aiStatus" class="api-status">Loading...</p>
+
+    <div class="analytics-toolbar">
+        <label for="aiCampaign">Campaign</label>
+        <select id="aiCampaign"></select>
+        <label for="aiChannel">Channel</label>
+        <select id="aiChannel">
+            <option>Facebook</option>
+            <option>Instagram</option>
+            <option>YouTube</option>
+            <option>TikTok</option>
+        </select>
+        <button onclick="generateDraft()">Generate Draft</button>
+    </div>
+
+    <label for="aiInstructions">Extra Instructions (optional)</label>
+    <textarea id="aiInstructions" placeholder="e.g. friendly tone, 120 characters, mention the winter sale"></textarea>
+
+    <p id="aiMessage"></p>
+
+    <label for="aiDraftBody">Draft</label>
+    <textarea id="aiDraftBody" rows="8" placeholder="Generate a draft above, then edit it here."></textarea>
+
+    <button onclick="saveDraftAsContent()">Save as Content</button>
 
 </section>
 
@@ -312,6 +386,7 @@
 </main>
 
 <script src="js/api.js"></script>
+<script src="js/content.js"></script>
 <script src="js/leads.js"></script>
 <script src="js/kpi.js"></script>
 <script src="js/automation.js"></script>
