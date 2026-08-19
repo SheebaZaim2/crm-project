@@ -4,6 +4,7 @@ const store = require("../campaigns-store");
 const contentStore = require("../content-store");
 const analytics = require("../services/analytics");
 const leadStore = require("../leads-store");
+const automation = require("../services/automation");
 
 const validCampaign = {
   campaignName: "Summer Launch Demo",
@@ -23,6 +24,7 @@ beforeEach(() => {
   contentStore.reset();
   analytics.reset();
   leadStore.reset();
+  automation.reset();
 });
 
 let adminToken;
@@ -795,5 +797,140 @@ describe("lead management (DCRM2-14)", () => {
       .send(validLead);
 
     expect(response.status).toBe(403);
+  });
+});
+
+async function createApprovedContent(title) {
+  const staffToken = await loginAs("staff@divinenet.test", "staff123");
+  const approverToken = await loginAs("approver@divinenet.test", "approver123");
+
+  const created = await request(app)
+    .post("/api/content")
+    .set("Authorization", `Bearer ${staffToken}`)
+    .send({ ...validContent, title: title || "Automation Post" });
+
+  const contentId = created.body.data.id;
+
+  await request(app)
+    .post(`/api/content/${contentId}/submit`)
+    .set("Authorization", `Bearer ${staffToken}`);
+
+  await request(app)
+    .post(`/api/content/${contentId}/decide`)
+    .set("Authorization", `Bearer ${approverToken}`)
+    .send({ decision: "Approve", comment: "Approved for automation test" });
+
+  return { contentId, staffToken };
+}
+
+describe("automation (FR-06)", () => {
+  it("activates a Draft campaign", async () => {
+    const response = await request(app)
+      .post("/api/campaigns/CAM-001/activate")
+      .set("Authorization", `Bearer ${adminToken}`);
+
+    expect(response.status).toBe(200);
+    expect(response.body.data.status).toBe("Active");
+  });
+
+  it("cannot activate a non-Draft campaign", async () => {
+    await request(app)
+      .post("/api/campaigns/CAM-001/activate")
+      .set("Authorization", `Bearer ${adminToken}`);
+
+    const response = await request(app)
+      .post("/api/campaigns/CAM-001/activate")
+      .set("Authorization", `Bearer ${adminToken}`);
+
+    expect(response.status).toBe(409);
+    expect(response.body.message).toBe("Only Draft campaigns can be activated");
+  });
+
+  it("returns 404 when activating an unknown campaign", async () => {
+    const response = await request(app)
+      .post("/api/campaigns/CAM-999/activate")
+      .set("Authorization", `Bearer ${adminToken}`);
+
+    expect(response.status).toBe(404);
+  });
+
+  it("forbids MarketingStaff from activating a campaign", async () => {
+    const token = await loginAs("staff@divinenet.test", "staff123");
+
+    const response = await request(app)
+      .post("/api/campaigns/CAM-001/activate")
+      .set("Authorization", `Bearer ${token}`);
+
+    expect(response.status).toBe(403);
+  });
+
+  it("schedules approved content and then publishes it", async () => {
+    const { contentId, staffToken } = await createApprovedContent();
+
+    const scheduled = await request(app)
+      .post(`/api/content/${contentId}/schedule`)
+      .set("Authorization", `Bearer ${staffToken}`)
+      .send({ scheduledAt: "2026-08-25" });
+
+    expect(scheduled.status).toBe(200);
+    expect(scheduled.body.data.post.outcome).toBe("Scheduled");
+    expect(scheduled.body.data.content.status).toBe("Scheduled");
+
+    const postId = scheduled.body.data.post.id;
+
+    const published = await request(app)
+      .post(`/api/posts/${postId}/publish`)
+      .set("Authorization", `Bearer ${staffToken}`);
+
+    expect(published.status).toBe(200);
+    expect(published.body.data.post.outcome).toBe("Published");
+    expect(published.body.data.post.publishedAt).toBeTruthy();
+    expect(published.body.data.content.status).toBe("Posted");
+  });
+
+  it("cannot schedule content that is not approved", async () => {
+    const staffToken = await loginAs("staff@divinenet.test", "staff123");
+
+    const created = await request(app)
+      .post("/api/content")
+      .set("Authorization", `Bearer ${staffToken}`)
+      .send({ ...validContent, title: "Unapproved Post" });
+
+    const response = await request(app)
+      .post(`/api/content/${created.body.data.id}/schedule`)
+      .set("Authorization", `Bearer ${staffToken}`);
+
+    expect(response.status).toBe(409);
+    expect(response.body.message).toBe("Only Approved content can be scheduled");
+  });
+
+  it("cannot publish a post that is not scheduled", async () => {
+    const staffToken = await loginAs("staff@divinenet.test", "staff123");
+
+    const response = await request(app)
+      .post("/api/posts/POST-001/publish")
+      .set("Authorization", `Bearer ${staffToken}`);
+
+    expect(response.status).toBe(404);
+  });
+
+  it("lists scheduled posts and campaign activities", async () => {
+    const { contentId, staffToken } = await createApprovedContent();
+
+    await request(app)
+      .post(`/api/content/${contentId}/schedule`)
+      .set("Authorization", `Bearer ${staffToken}`);
+
+    const posts = await request(app)
+      .get("/api/automation/posts")
+      .set("Authorization", `Bearer ${adminToken}`);
+    expect(posts.status).toBe(200);
+    expect(posts.body.data).toHaveLength(1);
+
+    const activities = await request(app)
+      .get("/api/automation/activities")
+      .set("Authorization", `Bearer ${adminToken}`);
+    expect(activities.status).toBe(200);
+    expect(activities.body.data.some((item) => item.action === "SchedulePost")).toBe(true);
   });
 });

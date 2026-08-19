@@ -243,6 +243,27 @@ function decide(id, decision, comment, decidedBy) {
   return { ...updated, approvals: [...existing.approvals, approval] };
 }
 
+function updateStatus(id, status) {
+  const existing = findById(id);
+
+  if (!existing) {
+    return null;
+  }
+
+  const updated = { ...existing, status };
+
+  if (dbReady) {
+    getDb().prepare(`UPDATE ${CONTENT_TABLE} SET status = @status WHERE id = @id`).run(updated);
+  }
+
+  const index = contentItems.findIndex((item) => item.id === id);
+  if (index !== -1) {
+    contentItems[index] = updated;
+  }
+
+  return updated;
+}
+
 function reset() {
   if (dbReady) {
     const db = getDb();
@@ -270,6 +291,7 @@ module.exports = {
   remove,
   submit,
   decide,
+  updateStatus,
   reset,
   validateContent,
   CONTENT_STATUSES,

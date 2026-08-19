@@ -102,6 +102,9 @@ const sampleLeads = [
 const LEAD_STATUSES = ["New", "Contacted", "Qualified", "Converted", "Lost"];
 const CONSENT_STATUSES = ["Granted", "Pending", "Withdrawn"];
 
+const sampleScheduledPosts = [];
+const sampleCampaignActivities = [];
+
 const COLUMNS =
   "id, campaignName, client, brand, objective, targetAudience, startDate, endDate, budget, channel, status";
 
@@ -179,6 +182,26 @@ function initDatabase() {
         notes          TEXT,
         createdDate    TEXT NOT NULL
       );
+
+      CREATE TABLE IF NOT EXISTS scheduled_posts (
+        id          TEXT PRIMARY KEY,
+        contentId   TEXT NOT NULL,
+        campaignId  TEXT NOT NULL,
+        platform    TEXT NOT NULL,
+        scheduledAt TEXT NOT NULL,
+        publishedAt TEXT,
+        outcome     TEXT NOT NULL
+      );
+
+      CREATE TABLE IF NOT EXISTS campaign_activities (
+        id          TEXT PRIMARY KEY,
+        campaignId  TEXT NOT NULL,
+        action      TEXT NOT NULL,
+        details     TEXT,
+        outcome     TEXT NOT NULL,
+        performedBy TEXT NOT NULL,
+        createdAt   TEXT NOT NULL
+      );
     `);
 
     const count = db.prepare("SELECT COUNT(*) AS n FROM campaigns").get().n;
@@ -253,6 +276,8 @@ module.exports = {
   sampleApprovals,
   sampleKpiRecords,
   sampleLeads,
+  sampleScheduledPosts,
+  sampleCampaignActivities,
   KPI_CORE_METRICS,
   KPI_PLATFORM_METRICS,
   LEAD_STATUSES,

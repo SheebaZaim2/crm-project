@@ -12,6 +12,7 @@ const ai = require("./services/ai_provider");
 const { buildDraftPrompt, buildReportPrompt } = require("./services/prompt_builder");
 const analytics = require("./services/analytics");
 const leadStore = require("./leads-store");
+const automation = require("./services/automation");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -34,7 +35,8 @@ app.get("/", (request, response) => {
       content: ["/api/content", "/api/content/:id", "POST /api/content", "PUT /api/content/:id", "DELETE /api/content/:id", "POST /api/content/:id/submit", "POST /api/content/:id/decide"],
       ai: "POST /api/ai/draft",
       analytics: ["GET /api/analytics/kpis", "POST /api/analytics/report", "GET /api/analytics/metrics"],
-      leads: ["GET /api/leads", "POST /api/leads", "GET /api/leads/:id", "PUT /api/leads/:id", "DELETE /api/leads/:id"]
+      leads: ["GET /api/leads", "POST /api/leads", "GET /api/leads/:id", "PUT /api/leads/:id", "DELETE /api/leads/:id"],
+      automation: ["POST /api/campaigns/:id/activate", "POST /api/content/:id/schedule", "POST /api/posts/:id/publish", "GET /api/automation/posts", "GET /api/automation/activities"]
     }
   });
 });
@@ -510,6 +512,114 @@ app.delete(
     });
   }
 );
+
+app.post(
+  "/api/campaigns/:id/activate",
+  authenticateToken,
+  requireRole(...WRITE_ROLES),
+  (request, response) => {
+    const activated = store.activate(request.params.id);
+
+    if (!activated) {
+      return response.status(404).json({
+        success: false,
+        message: "Campaign not found"
+      });
+    }
+
+    if (activated.error) {
+      return response.status(409).json({
+        success: false,
+        message: activated.error
+      });
+    }
+
+    automation.logActivity(
+      activated.id,
+      "ActivateCampaign",
+      `Campaign ${activated.campaignName} activated`,
+      "Activated",
+      request.user.email
+    );
+
+    response.status(200).json({
+      success: true,
+      data: activated
+    });
+  }
+);
+
+app.post(
+  "/api/content/:id/schedule",
+  authenticateToken,
+  requireRole(...CREATOR_ROLES),
+  (request, response) => {
+    const { scheduledAt } = request.body || {};
+
+    const result = automation.schedule(request.params.id, scheduledAt, request.user.email);
+
+    if (!result) {
+      return response.status(404).json({
+        success: false,
+        message: "Content not found"
+      });
+    }
+
+    if (result.error) {
+      return response.status(409).json({
+        success: false,
+        message: result.error
+      });
+    }
+
+    response.status(200).json({
+      success: true,
+      data: result
+    });
+  }
+);
+
+app.post(
+  "/api/posts/:id/publish",
+  authenticateToken,
+  requireRole(...CREATOR_ROLES),
+  (request, response) => {
+    const result = automation.publish(request.params.id, request.user.email);
+
+    if (!result) {
+      return response.status(404).json({
+        success: false,
+        message: "Scheduled post not found"
+      });
+    }
+
+    if (result.error) {
+      return response.status(409).json({
+        success: false,
+        message: result.error
+      });
+    }
+
+    response.status(200).json({
+      success: true,
+      data: result
+    });
+  }
+);
+
+app.get("/api/automation/posts", authenticateToken, (request, response) => {
+  response.status(200).json({
+    success: true,
+    data: automation.listPosts()
+  });
+});
+
+app.get("/api/automation/activities", authenticateToken, (request, response) => {
+  response.status(200).json({
+    success: true,
+    data: automation.listActivities()
+  });
+});
 
 app.get("/api/analytics/metrics", authenticateToken, (request, response) => {
   response.status(200).json({

@@ -103,6 +103,31 @@ function remove(id) {
   return existing;
 }
 
+function activate(id) {
+  const existing = findById(id);
+
+  if (!existing) {
+    return null;
+  }
+
+  if (existing.status !== "Draft") {
+    return { error: "Only Draft campaigns can be activated" };
+  }
+
+  const updated = { ...existing, status: "Active" };
+
+  if (dbReady) {
+    getDb().prepare(`UPDATE ${table} SET status = @status WHERE id = @id`).run(updated);
+  }
+
+  const index = campaigns.findIndex((item) => item.id === id);
+  if (index !== -1) {
+    campaigns[index] = updated;
+  }
+
+  return updated;
+}
+
 function reset() {
   if (dbReady) {
     const db = getDb();
@@ -126,5 +151,6 @@ module.exports = {
   create,
   update,
   remove,
+  activate,
   reset
 };
