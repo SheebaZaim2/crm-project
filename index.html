@@ -43,6 +43,7 @@
     <button onclick="showLeads()">Leads</button>
     <button onclick="showAutomation()">Automation</button>
     <button onclick="showSocial()">Social</button>
+    <button onclick="showPhase1()">Phase 1</button>
     <button onclick="showAnalytics()">Analytics</button>
 </nav>
 
@@ -262,6 +263,20 @@
 
 </section>
 
+<section id="phase1Section" class="hidden">
+
+    <h2>Phase 1 Integration</h2>
+
+    <p id="phase1Status" class="api-status">Loading...</p>
+
+    <h3>Customers</h3>
+    <div id="phase1Customers"></div>
+
+    <h3>Users</h3>
+    <div id="phase1Users"></div>
+
+</section>
+
 <section id="analyticsSection" class="hidden">
 
     <h2>Analytics</h2>
@@ -301,6 +316,7 @@
 <script src="js/kpi.js"></script>
 <script src="js/automation.js"></script>
 <script src="js/social.js"></script>
+<script src="js/phase1.js"></script>
 <script src="apps.js"></script>
 
 </body>
