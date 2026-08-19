@@ -76,6 +76,32 @@ const sampleKpiRecords = [
   { id: "KPI-015", campaignId: "CAM-001", metric: "Saves", value: 33, recordedDate: "2026-08-20" }
 ];
 
+const sampleLeads = [
+  {
+    id: "LEAD-001",
+    campaignId: "CAM-001",
+    firstName: "Alex",
+    lastName: "Demo",
+    email: "alex.demo@example.com",
+    phone: "0400 000 000",
+    company: "Fictional Co",
+    jobTitle: "Marketing Manager",
+    sourcePlatform: "Facebook",
+    consentStatus: "Granted",
+    leadStatus: "New",
+    leadScore: 5,
+    budgetRange: "$1k-$5k",
+    stage: "Awareness",
+    assignedOwner: "staff@divinenet.test",
+    lastContacted: null,
+    notes: "Enquired via fictional spring campaign.",
+    createdDate: "2026-08-20"
+  }
+];
+
+const LEAD_STATUSES = ["New", "Contacted", "Qualified", "Converted", "Lost"];
+const CONSENT_STATUSES = ["Granted", "Pending", "Withdrawn"];
+
 const COLUMNS =
   "id, campaignName, client, brand, objective, targetAudience, startDate, endDate, budget, channel, status";
 
@@ -132,6 +158,27 @@ function initDatabase() {
         value        REAL NOT NULL,
         recordedDate TEXT NOT NULL
       );
+
+      CREATE TABLE IF NOT EXISTS leads (
+        id             TEXT PRIMARY KEY,
+        campaignId     TEXT NOT NULL,
+        firstName      TEXT NOT NULL,
+        lastName       TEXT NOT NULL,
+        email          TEXT NOT NULL,
+        phone          TEXT,
+        company        TEXT,
+        jobTitle       TEXT,
+        sourcePlatform TEXT NOT NULL,
+        consentStatus  TEXT NOT NULL,
+        leadStatus     TEXT NOT NULL,
+        leadScore      INTEGER DEFAULT 0,
+        budgetRange    TEXT,
+        stage          TEXT,
+        assignedOwner  TEXT,
+        lastContacted  TEXT,
+        notes          TEXT,
+        createdDate    TEXT NOT NULL
+      );
     `);
 
     const count = db.prepare("SELECT COUNT(*) AS n FROM campaigns").get().n;
@@ -174,6 +221,19 @@ function initDatabase() {
       }
     }
 
+    const leadCount = db.prepare("SELECT COUNT(*) AS n FROM leads").get().n;
+
+    if (leadCount === 0) {
+      const insert = db.prepare(
+        `INSERT INTO leads (id, campaignId, firstName, lastName, email, phone, company, jobTitle, sourcePlatform, consentStatus, leadStatus, leadScore, budgetRange, stage, assignedOwner, lastContacted, notes, createdDate)
+         VALUES (@id, @campaignId, @firstName, @lastName, @email, @phone, @company, @jobTitle, @sourcePlatform, @consentStatus, @leadStatus, @leadScore, @budgetRange, @stage, @assignedOwner, @lastContacted, @notes, @createdDate)`
+      );
+
+      for (const lead of sampleLeads) {
+        insert.run(lead);
+      }
+    }
+
     return true;
   } catch (error) {
     db = null;
@@ -192,7 +252,10 @@ module.exports = {
   sampleContentItems,
   sampleApprovals,
   sampleKpiRecords,
+  sampleLeads,
   KPI_CORE_METRICS,
   KPI_PLATFORM_METRICS,
+  LEAD_STATUSES,
+  CONSENT_STATUSES,
   COLUMNS
 };

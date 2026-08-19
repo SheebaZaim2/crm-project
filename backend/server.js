@@ -11,6 +11,7 @@ const { signToken, authenticateToken, requireRole } = require("./auth");
 const ai = require("./services/ai_provider");
 const { buildDraftPrompt, buildReportPrompt } = require("./services/prompt_builder");
 const analytics = require("./services/analytics");
+const leadStore = require("./leads-store");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -32,7 +33,8 @@ app.get("/", (request, response) => {
       campaigns: ["/api/campaigns", "/api/campaigns/:id", "POST /api/campaigns", "PUT /api/campaigns/:id", "DELETE /api/campaigns/:id"],
       content: ["/api/content", "/api/content/:id", "POST /api/content", "PUT /api/content/:id", "DELETE /api/content/:id", "POST /api/content/:id/submit", "POST /api/content/:id/decide"],
       ai: "POST /api/ai/draft",
-      analytics: ["GET /api/analytics/kpis", "POST /api/analytics/report", "GET /api/analytics/metrics"]
+      analytics: ["GET /api/analytics/kpis", "POST /api/analytics/report", "GET /api/analytics/metrics"],
+      leads: ["GET /api/leads", "POST /api/leads", "GET /api/leads/:id", "PUT /api/leads/:id", "DELETE /api/leads/:id"]
     }
   });
 });
@@ -406,6 +408,106 @@ app.post(
         message: "AI draft generation failed"
       });
     }
+  }
+);
+
+app.get("/api/leads", authenticateToken, (request, response) => {
+  response.status(200).json({
+    success: true,
+    data: leadStore.list()
+  });
+});
+
+app.get("/api/leads/:id", authenticateToken, (request, response) => {
+  const lead = leadStore.findById(request.params.id);
+
+  if (!lead) {
+    return response.status(404).json({
+      success: false,
+      message: "Lead not found"
+    });
+  }
+
+  response.status(200).json({
+    success: true,
+    data: lead
+  });
+});
+
+app.post(
+  "/api/leads",
+  authenticateToken,
+  requireRole(...CREATOR_ROLES),
+  (request, response) => {
+    const validationError = leadStore.validateLead(request.body);
+
+    if (validationError) {
+      return response.status(400).json({
+        success: false,
+        message: validationError
+      });
+    }
+
+    const created = leadStore.create({
+      ...request.body,
+      createdDate: new Date().toISOString().slice(0, 10)
+    });
+
+    response.status(201).json({
+      success: true,
+      data: created
+    });
+  }
+);
+
+app.put(
+  "/api/leads/:id",
+  authenticateToken,
+  requireRole(...CREATOR_ROLES),
+  (request, response) => {
+    const validationError = leadStore.validateLead(request.body);
+
+    if (validationError) {
+      return response.status(400).json({
+        success: false,
+        message: validationError
+      });
+    }
+
+    const updated = leadStore.update(request.params.id, request.body);
+
+    if (!updated) {
+      return response.status(404).json({
+        success: false,
+        message: "Lead not found"
+      });
+    }
+
+    response.status(200).json({
+      success: true,
+      data: updated
+    });
+  }
+);
+
+app.delete(
+  "/api/leads/:id",
+  authenticateToken,
+  requireRole(...WRITE_ROLES),
+  (request, response) => {
+    const removed = leadStore.remove(request.params.id);
+
+    if (!removed) {
+      return response.status(404).json({
+        success: false,
+        message: "Lead not found"
+      });
+    }
+
+    response.status(200).json({
+      success: true,
+      data: removed
+    });
   }
 );
 

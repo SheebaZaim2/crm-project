@@ -3,6 +3,7 @@ const app = require("../server");
 const store = require("../campaigns-store");
 const contentStore = require("../content-store");
 const analytics = require("../services/analytics");
+const leadStore = require("../leads-store");
 
 const validCampaign = {
   campaignName: "Summer Launch Demo",
@@ -21,6 +22,7 @@ beforeEach(() => {
   store.reset();
   contentStore.reset();
   analytics.reset();
+  leadStore.reset();
 });
 
 let adminToken;
@@ -44,6 +46,24 @@ const validContent = {
   body: "Fictional post body for the sprint campaign.",
   channel: "Facebook",
   scheduledDate: "2026-08-22"
+};
+
+const validLead = {
+  campaignId: "CAM-001",
+  firstName: "Jamie",
+  lastName: "Lee",
+  email: "jamie.lee@example.com",
+  phone: "0400 111 222",
+  company: "Fictional Studio",
+  jobTitle: "Owner",
+  sourcePlatform: "Instagram",
+  consentStatus: "Granted",
+  leadStatus: "New",
+  leadScore: 7,
+  budgetRange: "$5k-$10k",
+  stage: "Awareness",
+  assignedOwner: "staff@divinenet.test",
+  notes: "Found us via the fictional campaign."
 };
 
 describe("GET /api/health", () => {
@@ -667,5 +687,113 @@ describe("AI performance report (FR-09)", () => {
     expect(response.body.message).toBe(
       "No analytics data available for the selected campaign"
     );
+  });
+});
+
+describe("lead management (DCRM2-14)", () => {
+  it("returns 401 without a token", async () => {
+    const response = await request(app).get("/api/leads");
+
+    expect(response.status).toBe(401);
+  });
+
+  it("returns the sample leads", async () => {
+    const response = await request(app)
+      .get("/api/leads")
+      .set("Authorization", `Bearer ${adminToken}`);
+
+    expect(response.status).toBe(200);
+    expect(response.body.success).toBe(true);
+    expect(response.body.data).toHaveLength(1);
+    expect(response.body.data[0].id).toBe("LEAD-001");
+  });
+
+  it("creates a lead with a generated id", async () => {
+    const token = await loginAs("staff@divinenet.test", "staff123");
+
+    const response = await request(app)
+      .post("/api/leads")
+      .set("Authorization", `Bearer ${token}`)
+      .send(validLead);
+
+    expect(response.status).toBe(201);
+    expect(response.body.data.id).toBe("LEAD-002");
+    expect(response.body.data.sourcePlatform).toBe("Instagram");
+  });
+
+  it("rejects a missing required field", async () => {
+    const response = await request(app)
+      .post("/api/leads")
+      .set("Authorization", `Bearer ${adminToken}`)
+      .send({ ...validLead, firstName: "" });
+
+    expect(response.status).toBe(400);
+    expect(response.body.message).toBe("firstName is required");
+  });
+
+  it("rejects an invalid email", async () => {
+    const response = await request(app)
+      .post("/api/leads")
+      .set("Authorization", `Bearer ${adminToken}`)
+      .send({ ...validLead, email: "not-an-email" });
+
+    expect(response.status).toBe(400);
+    expect(response.body.message).toBe("email must be a valid email address");
+  });
+
+  it("rejects an invalid consent status", async () => {
+    const response = await request(app)
+      .post("/api/leads")
+      .set("Authorization", `Bearer ${adminToken}`)
+      .send({ ...validLead, consentStatus: "Maybe" });
+
+    expect(response.status).toBe(400);
+    expect(response.body.message).toContain("consentStatus must be");
+  });
+
+  it("updates an existing lead", async () => {
+    const response = await request(app)
+      .put("/api/leads/LEAD-001")
+      .set("Authorization", `Bearer ${adminToken}`)
+      .send({ ...validLead, leadStatus: "Qualified" });
+
+    expect(response.status).toBe(200);
+    expect(response.body.data.id).toBe("LEAD-001");
+    expect(response.body.data.leadStatus).toBe("Qualified");
+  });
+
+  it("returns 404 when updating an unknown lead", async () => {
+    const response = await request(app)
+      .put("/api/leads/LEAD-999")
+      .set("Authorization", `Bearer ${adminToken}`)
+      .send(validLead);
+
+    expect(response.status).toBe(404);
+    expect(response.body.message).toBe("Lead not found");
+  });
+
+  it("removes an existing lead", async () => {
+    const response = await request(app)
+      .delete("/api/leads/LEAD-001")
+      .set("Authorization", `Bearer ${adminToken}`);
+
+    expect(response.status).toBe(200);
+    expect(response.body.data.id).toBe("LEAD-001");
+
+    const list = await request(app)
+      .get("/api/leads")
+      .set("Authorization", `Bearer ${adminToken}`);
+    expect(list.body.data).toHaveLength(0);
+  });
+
+  it("forbids ClientApprover from creating a lead", async () => {
+    const token = await loginAs("approver@divinenet.test", "approver123");
+
+    const response = await request(app)
+      .post("/api/leads")
+      .set("Authorization", `Bearer ${token}`)
+      .send(validLead);
+
+    expect(response.status).toBe(403);
   });
 });
