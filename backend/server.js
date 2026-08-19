@@ -1,3 +1,5 @@
+require("dotenv").config();
+
 const express = require("express");
 const cors = require("cors");
 
@@ -6,6 +8,8 @@ const store = require("./campaigns-store");
 const contentStore = require("./content-store");
 const users = require("./users");
 const { signToken, authenticateToken, requireRole } = require("./auth");
+const ai = require("./services/ai_provider");
+const { buildDraftPrompt } = require("./services/prompt_builder");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -25,7 +29,8 @@ app.get("/", (request, response) => {
     endpoints: {
       health: "/api/health",
       campaigns: ["/api/campaigns", "/api/campaigns/:id", "POST /api/campaigns", "PUT /api/campaigns/:id", "DELETE /api/campaigns/:id"],
-      content: ["/api/content", "/api/content/:id", "POST /api/content", "PUT /api/content/:id", "DELETE /api/content/:id", "POST /api/content/:id/submit", "POST /api/content/:id/decide"]
+      content: ["/api/content", "/api/content/:id", "POST /api/content", "PUT /api/content/:id", "DELETE /api/content/:id", "POST /api/content/:id/submit", "POST /api/content/:id/decide"],
+      ai: "POST /api/ai/draft"
     }
   });
 });
@@ -341,6 +346,64 @@ app.post(
       success: true,
       data: decided
     });
+  }
+);
+
+app.post(
+  "/api/ai/draft",
+  authenticateToken,
+  requireRole(...CREATOR_ROLES),
+  async (request, response) => {
+    const { campaignId, channel, extraInstructions } = request.body || {};
+
+    if (!campaignId || !channel) {
+      return response.status(400).json({
+        success: false,
+        message: "campaignId and channel are required"
+      });
+    }
+
+    const allowedChannels = ["Facebook", "Instagram", "YouTube", "TikTok"];
+
+    if (!allowedChannels.includes(channel)) {
+      return response.status(400).json({
+        success: false,
+        message: "Channel must be Facebook, Instagram, YouTube or TikTok"
+      });
+    }
+
+    const campaign = store.findById(campaignId);
+
+    if (!campaign) {
+      return response.status(404).json({
+        success: false,
+        message: "Campaign not found"
+      });
+    }
+
+    const prompt = buildDraftPrompt(campaign, channel, extraInstructions);
+
+    try {
+      const result = await ai.generateDraft(prompt);
+
+      response.status(200).json({
+        success: true,
+        data: {
+          draft: result.draft,
+          provider: result.provider,
+          model: result.model,
+          campaignId,
+          channel,
+          warning: result.warning || null
+        },
+        note: "AI draft is editable and is never auto-published."
+      });
+    } catch (error) {
+      response.status(500).json({
+        success: false,
+        message: "AI draft generation failed"
+      });
+    }
   }
 );
 

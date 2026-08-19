@@ -32,6 +32,7 @@ async function loginAs(email, password) {
 }
 
 beforeAll(async () => {
+  process.env.AI_MOCK = "1";
   adminToken = await loginAs("admin@divinenet.test", "admin123");
 });
 
@@ -460,5 +461,55 @@ describe("content calendar and approval workflow", () => {
 
     expect(response.status).toBe(409);
     expect(response.body.message).toBe("Only Submitted content can be approved or rejected");
+  });
+});
+describe("AI draft generation", () => {
+  it("returns 401 without a token", async () => {
+    const response = await request(app).post("/api/ai/draft").send({});
+
+    expect(response.status).toBe(401);
+  });
+
+  it("returns 400 when campaignId or channel missing", async () => {
+    const response = await request(app)
+      .post("/api/ai/draft")
+      .set("Authorization", `Bearer ${adminToken}`)
+      .send({ campaignId: "CAM-001" });
+
+    expect(response.status).toBe(400);
+  });
+
+  it("returns 404 for an unknown campaign", async () => {
+    const response = await request(app)
+      .post("/api/ai/draft")
+      .set("Authorization", `Bearer ${adminToken}`)
+      .send({ campaignId: "CAM-999", channel: "Facebook" });
+
+    expect(response.status).toBe(404);
+  });
+
+  it("generates an editable draft from campaign context", async () => {
+    const response = await request(app)
+      .post("/api/ai/draft")
+      .set("Authorization", `Bearer ${adminToken}`)
+      .send({ campaignId: "CAM-001", channel: "Instagram", extraInstructions: "Keep it short" });
+
+    expect(response.status).toBe(200);
+    expect(response.body.success).toBe(true);
+    expect(response.body.data.draft).toBeTruthy();
+    expect(response.body.data.provider).toBe("mock");
+    expect(response.body.data.channel).toBe("Instagram");
+    expect(response.body.note).toContain("never auto-published");
+  });
+
+it("forbids ClientApprover from generating drafts", async () => {
+    const token = await loginAs("approver@divinenet.test", "approver123");
+
+    const response = await request(app)
+      .post("/api/ai/draft")
+      .set("Authorization", `Bearer ${token}`)
+      .send({ campaignId: "CAM-001", channel: "Facebook" });
+
+    expect(response.status).toBe(403);
   });
 });
