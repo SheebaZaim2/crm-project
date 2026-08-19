@@ -40,6 +40,7 @@
     <button onclick="showDashboard()">Dashboard</button>
     <button onclick="showCampaigns()">Campaigns</button>
     <button onclick="showCreateForm()">Create Campaign</button>
+    <button onclick="showLeads()">Leads</button>
     <button onclick="showAnalytics()">Analytics</button>
 </nav>
 
@@ -154,6 +155,77 @@
 
 </section>
 
+<section id="leadsSection" class="hidden">
+
+    <h2>Leads</h2>
+
+    <p id="leadsStatus" class="api-status">Loading leads...</p>
+
+    <div class="analytics-toolbar">
+        <button onclick="showLeadForm()">New Lead</button>
+        <button onclick="loadLeads()">Refresh</button>
+    </div>
+
+    <div id="leadFormWrap" class="hidden">
+        <h3 id="leadFormTitle">New Lead</h3>
+        <form id="leadForm" onsubmit="saveLead(event)">
+            <input type="hidden" id="leadId">
+            <label for="leadCampaignId">Related Campaign *</label>
+            <select id="leadCampaignId" required></select>
+            <label for="leadFirstName">First Name *</label>
+            <input id="leadFirstName" type="text" required>
+            <label for="leadLastName">Last Name *</label>
+            <input id="leadLastName" type="text" required>
+            <label for="leadEmail">Email *</label>
+            <input id="leadEmail" type="email" required>
+            <label for="leadPhone">Phone</label>
+            <input id="leadPhone" type="tel">
+            <label for="leadCompany">Company</label>
+            <input id="leadCompany" type="text">
+            <label for="leadJobTitle">Job Title</label>
+            <input id="leadJobTitle" type="text">
+            <label for="leadSourcePlatform">Source Platform *</label>
+            <select id="leadSourcePlatform" required>
+                <option value="">Select Platform</option>
+                <option>Facebook</option>
+                <option>Instagram</option>
+                <option>YouTube</option>
+                <option>TikTok</option>
+            </select>
+            <label for="leadConsentStatus">Consent Status *</label>
+            <select id="leadConsentStatus" required>
+                <option>Granted</option>
+                <option>Pending</option>
+                <option>Withdrawn</option>
+            </select>
+            <label for="leadStatus">Lead Status *</label>
+            <select id="leadStatus" required>
+                <option>New</option>
+                <option>Contacted</option>
+                <option>Qualified</option>
+                <option>Converted</option>
+                <option>Lost</option>
+            </select>
+            <label for="leadScore">Lead Score</label>
+            <input id="leadScore" type="number" min="0">
+            <label for="leadBudgetRange">Budget Range</label>
+            <input id="leadBudgetRange" type="text">
+            <label for="leadStage">Stage</label>
+            <input id="leadStage" type="text">
+            <label for="leadAssignedOwner">Assigned Owner</label>
+            <input id="leadAssignedOwner" type="text">
+            <label for="leadNotes">Notes</label>
+            <textarea id="leadNotes"></textarea>
+            <p id="leadMessage"></p>
+            <button type="submit">Save Lead</button>
+            <button type="button" onclick="loadLeads()">Cancel</button>
+        </form>
+    </div>
+
+    <div id="leadList"></div>
+
+</section>
+
 <section id="analyticsSection" class="hidden">
 
     <h2>Analytics</h2>
@@ -189,6 +261,7 @@
 </main>
 
 <script src="js/api.js"></script>
+<script src="js/leads.js"></script>
 <script src="js/kpi.js"></script>
 <script src="apps.js"></script>
 

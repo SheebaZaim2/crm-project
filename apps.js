@@ -104,6 +104,7 @@ function showLogin() {
     document.getElementById("formSection").classList.add("hidden");
     document.getElementById("detailsSection").classList.add("hidden");
     document.getElementById("analyticsSection").classList.add("hidden");
+    document.getElementById("leadsSection").classList.add("hidden");
     document.getElementById("userBar").classList.add("hidden");
 }
 
@@ -157,6 +158,7 @@ function hideAll() {
     document.getElementById("formSection").classList.add("hidden");
     document.getElementById("detailsSection").classList.add("hidden");
     document.getElementById("analyticsSection").classList.add("hidden");
+    document.getElementById("leadsSection").classList.add("hidden");
 }
 
 function updateDashboard() {
