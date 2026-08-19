@@ -41,6 +41,7 @@
     <button onclick="showCampaigns()">Campaigns</button>
     <button onclick="showCreateForm()">Create Campaign</button>
     <button onclick="showLeads()">Leads</button>
+    <button onclick="showAutomation()">Automation</button>
     <button onclick="showAnalytics()">Analytics</button>
 </nav>
 
@@ -226,6 +227,30 @@
 
 </section>
 
+<section id="automationSection" class="hidden">
+
+    <h2>Automation</h2>
+
+    <p id="automationStatus" class="api-status">Loading...</p>
+
+    <h3>Schedule Approved Content</h3>
+    <div class="analytics-report">
+        <label for="autoContent">Approved Content</label>
+        <select id="autoContent" onchange="populateScheduleDate()"></select>
+        <label for="autoDate">Scheduled Date</label>
+        <input id="autoDate" type="date">
+        <button onclick="scheduleContent()">Schedule</button>
+        <p id="autoMessage"></p>
+    </div>
+
+    <h3>Scheduled Posts</h3>
+    <div id="scheduledPosts"></div>
+
+    <h3>Campaign Activity Log</h3>
+    <div id="activityLog"></div>
+
+</section>
+
 <section id="analyticsSection" class="hidden">
 
     <h2>Analytics</h2>
@@ -263,6 +288,7 @@
 <script src="js/api.js"></script>
 <script src="js/leads.js"></script>
 <script src="js/kpi.js"></script>
+<script src="js/automation.js"></script>
 <script src="apps.js"></script>
 
 </body>

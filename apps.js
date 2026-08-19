@@ -105,6 +105,7 @@ function showLogin() {
     document.getElementById("detailsSection").classList.add("hidden");
     document.getElementById("analyticsSection").classList.add("hidden");
     document.getElementById("leadsSection").classList.add("hidden");
+    document.getElementById("automationSection").classList.add("hidden");
     document.getElementById("userBar").classList.add("hidden");
 }
 
@@ -159,6 +160,7 @@ function hideAll() {
     document.getElementById("detailsSection").classList.add("hidden");
     document.getElementById("analyticsSection").classList.add("hidden");
     document.getElementById("leadsSection").classList.add("hidden");
+    document.getElementById("automationSection").classList.add("hidden");
 }
 
 function updateDashboard() {
@@ -219,6 +221,11 @@ function renderCampaigns() {
                 <button onclick="viewCampaign('${campaign.id}')">View</button>
                 <button onclick="editCampaign('${campaign.id}')">Edit</button>
                 <button onclick="deleteCampaign('${campaign.id}')">Delete</button>
+                ${
+                    campaign.status === "Draft"
+                        ? `<button onclick="activateCampaign('${campaign.id}')">Activate</button>`
+                        : ""
+                }
             `
             : `<button onclick="viewCampaign('${campaign.id}')">View</button>`;
 
@@ -422,6 +429,39 @@ async function deleteCampaign(id) {
 
     campaigns = campaigns.filter(item => item.id !== id);
 
+    saveToStorage();
+    updateDashboard();
+    renderCampaigns();
+}
+
+async function activateCampaign(id) {
+    const campaign = campaigns.find(item => item.id === id);
+
+    if (!campaign) {
+        return;
+    }
+
+    const confirmed = confirm(
+        `Activate campaign "${campaign.campaignName}"?`
+    );
+
+    if (!confirmed) {
+        return;
+    }
+
+    if (apiMode) {
+        try {
+            await apiPost(`/api/campaigns/${id}/activate`);
+            await refreshCampaigns();
+            updateDashboard();
+            renderCampaigns();
+        } catch (error) {
+            alert("Activation failed: " + error.message);
+        }
+        return;
+    }
+
+    campaign.status = "Active";
     saveToStorage();
     updateDashboard();
     renderCampaigns();
